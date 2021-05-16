@@ -320,6 +320,10 @@ return function (App $app) {
             'id' => $tour->id,
             'placement' => [
                 'id' => $tour->placement_id,
+                'date' => $tour->date,
+                'pickpoint' => [
+                    'time' => $tour->pickpoint_time
+                ],
                 'placements' => $placementItems->map(function($placement) {
                     switch ($placement->type) {
                         case 'link':
