@@ -101,12 +101,24 @@ return function (App $app) {
                 ]);
             } else {
                 return withCORSHeaders($resp)->withJson([
-                    'error' => 'Пароль не подходит'
+                    'errors' => [
+                        [
+                            'id' => $container->get('nanoid')->generateId(),
+                            'code' => 'password-mismatch',
+                            'title' => 'Пароль не подходит'
+                        ]
+                    ]
                 ]);
             }
         } else {
             return withCORSHeaders($resp)->withJson([
-                'error' => 'Пользователь не найден'
+                'errors' => [
+                    [
+                        'id' => $container->get('nanoid')->generateId(),
+                        'code' => 'user-not-found',
+                        'title' => 'Такой пользователь не найден'
+                    ]
+                ]
             ]);
         }
     });
@@ -117,7 +129,13 @@ return function (App $app) {
         $user = $container->get('db')->table('users')->where('email', '=', $email)->first();
         if ($user) {
             return withCORSHeaders($resp)->withJson([
-                'error' => 'Емейл уже используется другим пользователем'
+                'errors' => [
+                    [
+                        'id' => $container->get('nanoid')->generateId(),
+                        'code' => $EMAIL_IN_USE_ERROR_CODE,
+                        'title' => 'Емейл уже используется другим пользователем'
+                    ]
+                ]
             ]);
         } else {
             $password = $body['password'];
@@ -153,17 +171,35 @@ return function (App $app) {
                     ]);
                 } else {
                     return withCORSHeaders($resp)->withJson([
-                        'error' => 'Токен не совпадает'
+                        'errors' => [
+                            [
+                                'id' => $container->get('nanoid')->generateId(),
+                                'code' => 'token-mismatch',
+                                'title' => 'Токен не совпадает'
+                            ]
+                        ]
                     ]);
                 }
             } else {
                 return withCORSHeaders($resp)->withJson([
-                    'error' => 'Пользователь не найден'
+                    'errors' => [
+                        [
+                            'id' => $container->get('nanoid')->generateId(),
+                            'code' => 'user-not-found',
+                            'title' => 'Пользователь не найден'
+                        ]
+                    ]
                 ]);
             }
         } else {
             return withCORSHeaders($resp)->withJson([
-                'error' => 'Токен протух'
+                'errors' => [
+                    [
+                        'id' => $container->get('nanoid')->generateId(),
+                        'code' => 'token-expired',
+                        'title' => 'Токен протух'
+                    ]
+                ]
             ]);
         }
     });
