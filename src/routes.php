@@ -132,7 +132,7 @@ return function (App $app) {
                 'errors' => [
                     [
                         'id' => $container->get('nanoid')->generateId(),
-                        'code' => $EMAIL_IN_USE_ERROR_CODE,
+                        'code' => 'email-in-use',
                         'title' => 'Емейл уже используется другим пользователем'
                     ]
                 ]
