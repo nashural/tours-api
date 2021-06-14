@@ -271,7 +271,6 @@ return function (App $app) {
     $app->post('/guides', function (Request $req, Response $resp, array $args) use ($container) {
         $token = parseToken($container, $req);
         $body = $req->getParsedBody();
-        var_dump($token->sub);
         $container->get('db')->table('guides')->insert(array_merge(
             $body,
             [ 'author' => $token->sub ]
