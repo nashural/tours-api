@@ -36,6 +36,12 @@ return function (App $app) {
             ->withStatus(200);
     });
 
+    $app->options('/auth/register', function (Request $req, Response $resp, array $args) use ($container) {
+        return withCORSHeaders($resp)
+            ->withHeader('Access-Control-Allow-Methods', implode(',', ['OPTIONS', 'POST']))
+            ->withStatus(200);
+    });
+
     $app->options('/auth/refresh_token', function (Request $req, Response $resp, array $args) use ($container) {
         return withCORSHeaders($resp)
             ->withHeader('Access-Control-Allow-Methods', implode(',', ['OPTIONS', 'POST']))
@@ -139,15 +145,50 @@ return function (App $app) {
             ]);
         } else {
             $password = $body['password'];
-            $password_hash = password_hash($password, PASSWORD_BCRYPT);
-            $container->get('db')->table('users')->insert([
-                'id' => $container->get('nanoid')->generateId(),
-                'email' => $email,
-                'password_hash' => $password_hash
-            ]);
-            return withCORSHeaders($resp)->withJson([
-                'success' => true
-            ]);
+            $password2 = $body['password2'];
+            if ($password == $password2) {
+                $password_hash = password_hash($password, PASSWORD_BCRYPT);
+                $id = $container->get('nanoid')->generateId();
+
+                $accessToken = JWT::encode([
+                    'sub' => $id,
+                    'iss' => $req->getUri()->getBaseUrl(),
+                    'aud' => $req->getUri()->getBaseUrl(),
+                    'iat' => time(),
+                    'exp' => time() + (60 * 60) // + 1 час
+                ], $container->get('jwt_key'));
+
+                $refreshToken = JWT::encode([
+                    'sub' => $id,
+                    'iss' => $req->getUri()->getBaseUrl(),
+                    'aud' => $req->getUri()->getBaseUrl(),
+                    'iat' => time(),
+                    'exp' => time() + (24 * 60 * 60) // + 1 день
+                ], $container->get('jwt_key'));
+
+                $container->get('db')->table('users')->insert([
+                    'id' => $id,
+                    'name' => $body['name'],
+                    'email' => $email,
+                    'password_hash' => $password_hash,
+                    'refresh_token' => $refreshToken
+                ]);
+                
+                return withCORSHeaders($resp)->withJson([
+                    'accessToken' => $accessToken,
+                    'refreshToken' => $refreshToken
+                ]);
+            } else {
+                return withCORSHeaders($resp)->withJson([
+                    'errors' => [
+                        [
+                            'id' => $container->get('nanoid')->generateId(),
+                            'code' => 'not-equal-passwords',
+                            'title' => 'Пароли не совпадают'
+                        ]
+                    ]
+                ]);
+            }
         }        
     });
 
@@ -230,6 +271,7 @@ return function (App $app) {
     $app->post('/guides', function (Request $req, Response $resp, array $args) use ($container) {
         $token = parseToken($container, $req);
         $body = $req->getParsedBody();
+        var_dump($token->sub);
         $container->get('db')->table('guides')->insert(array_merge(
             $body,
             [ 'author' => $token->sub ]
